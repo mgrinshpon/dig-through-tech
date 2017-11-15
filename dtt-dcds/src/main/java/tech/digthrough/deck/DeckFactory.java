@@ -16,6 +16,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.IntStream;
 import tech.digthrough.Deck;
 
 public class DeckFactory {
@@ -54,26 +55,20 @@ public class DeckFactory {
    * @return a list of decks in order
    */
   public List<Deck> getLineage(final Long deckId) {
-    final Long id =
-        Optional.ofNullable(deckId)
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "deckId must be non-null when retrieving deck lineage"));
+    final Long id = Optional.ofNullable(deckId).orElseThrow(
+        () -> new IllegalArgumentException("deckId must be non-null when retrieving deck lineage"));
     final List<Deck> retval = new ArrayList<>();
     try {
       final DeckIteration iter0 = dao.getDeckIteration(id)[0];
       final List<DeckIteration> iterations = new ArrayList<>();
       if (iter0.hasPrevious()) {
-        iterations.addAll(
-            Arrays.asList(
-                dao.getDeckIterations(
-                    iter0.getPrevious().toArray(new Long[iter0.getPrevious().size()]))));
+        iterations.addAll(Arrays.asList(dao
+            .getDeckIterations(iter0.getPrevious().toArray(new Long[iter0.getPrevious().size()]))));
       }
       iterations.add(iter0);
-      final List<DeckIteration> sorted = sortDeckIters(iterations, iter0.getKey());
-      for (int i = 0; i < sorted.size(); ++i) {
-        retval.add(deckFromIterations(iterations.subList(0, i + 1)));
+      sortDeckIters().accept(iterations, iter0.getKey());
+      for (int i = 1; i <= iterations.size(); ++i) {
+        retval.add(deckFromIterations(iterations.subList(0, i)));
       }
     } catch (final SQLException e) {
       throw new IllegalArgumentException("deckId was not found in Deck Database. deckId=" + id);
@@ -81,25 +76,45 @@ public class DeckFactory {
     return retval;
   }
 
-  private List<DeckIteration> sortDeckIters(final List<DeckIteration> iters, final Long headId) {
-    // TODO
-    return iters;
+  /**
+   * Sort the deck iterations by descending chronological order in place using an insertion sort.
+   */
+  static BiConsumer<List<DeckIteration>, Long> sortDeckIters() {
+    return (toSort, headId) -> {
+      int indexUnderExamination = IntStream.range(0, toSort.size())
+          .filter(index -> toSort.get(index).getKey().equals(headId)).findAny()
+          .orElseThrow(() -> new IllegalArgumentException(
+              "Unable to find headId=" + headId + " during sort"));
+      DeckIteration swap = toSort.get(indexUnderExamination);
+      Long nextIdToFind = headId;
+      toSort.remove(indexUnderExamination);
+      toSort.add(toSort.size(), swap);
+      for (int i = toSort.size(); i > 0; --i) {
+        final Long nextId = nextIdToFind;
+        // Move up the unsorted list
+        for (int j = i; j > 0; --j) {
+          if (!toSort.get(j - 1).getNext().stream().anyMatch(val -> val.equals(nextId))) {
+            // If this index doesn't contain the previous headId, ignore it
+            continue;
+          }
+          indexUnderExamination = j - 1;
+          swap = toSort.get(indexUnderExamination);
+          nextIdToFind = swap.getKey();
+          toSort.remove(indexUnderExamination);
+          toSort.add(i - 1, swap);
+        }
+      }
+    };
   }
 
   public static Deck deckFromIterations(final List<DeckIteration> iters) {
 
     final Map<String, Integer> mainDeck =
-        iters
-            .stream()
-            .map(iteration -> iteration.getMaindeckChanges())
-            .flatMap(kvps -> kvps.entrySet().stream())
-            .collect(new DecklistCollector());
+        iters.stream().map(iteration -> iteration.getMaindeckChanges())
+            .flatMap(kvps -> kvps.entrySet().stream()).collect(new DecklistCollector());
     final Map<String, Integer> sideboard =
-        iters
-            .stream()
-            .map(iteration -> iteration.getSideboardChanges())
-            .flatMap(kvps -> kvps.entrySet().stream())
-            .collect(new DecklistCollector());
+        iters.stream().map(iteration -> iteration.getSideboardChanges())
+            .flatMap(kvps -> kvps.entrySet().stream()).collect(new DecklistCollector());
 
     return null;
   }

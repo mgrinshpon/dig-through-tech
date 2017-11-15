@@ -1,10 +1,10 @@
 package tech.digthrough.deck;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class DeckIteration {
   private Long key;
@@ -12,46 +12,24 @@ public class DeckIteration {
   private final Date creationTime;
   private final Map<String, Integer> maindeckChanges;
   private final Map<String, Integer> sideboardChanges;
-  private final List<Long> previous;
-  private final List<Long> next;
+  private final Set<Long> previous;
+  private final Set<Long> next;
 
-  public DeckIteration(
-      final String name,
-      final Map<String, Integer> maindeckChanges,
+  public DeckIteration(final String name, final Map<String, Integer> maindeckChanges,
       final Map<String, Integer> sideboardChanges) {
-    this(
-        null,
-        name,
-        Date.from(Instant.now()),
-        maindeckChanges,
-        sideboardChanges,
-        new ArrayList<>(),
-        new ArrayList<>());
+    this(null, name, Date.from(Instant.now()), maindeckChanges, sideboardChanges, new HashSet<>(),
+        new HashSet<>());
   }
 
-  public DeckIteration(
-      final Long key,
-      final String name,
-      final Map<String, Integer> maindeckChanges,
-      final Map<String, Integer> sideboardChanges) {
-    this(
-        key,
-        name,
-        Date.from(Instant.now()),
-        maindeckChanges,
-        sideboardChanges,
-        new ArrayList<>(),
-        new ArrayList<>());
+  public DeckIteration(final Long key, final String name,
+      final Map<String, Integer> maindeckChanges, final Map<String, Integer> sideboardChanges) {
+    this(key, name, Date.from(Instant.now()), maindeckChanges, sideboardChanges, new HashSet<>(),
+        new HashSet<>());
   }
 
-  public DeckIteration(
-      final Long key,
-      final String name,
-      final Date creationTime,
-      final Map<String, Integer> maindeckChanges,
-      final Map<String, Integer> sideboardChanges,
-      final List<Long> previous,
-      final List<Long> next) {
+  public DeckIteration(final Long key, final String name, final Date creationTime,
+      final Map<String, Integer> maindeckChanges, final Map<String, Integer> sideboardChanges,
+      final Set<Long> previous, final Set<Long> next) {
     this.key = key;
     this.name = name;
     this.creationTime = creationTime;
@@ -85,7 +63,7 @@ public class DeckIteration {
     return sideboardChanges;
   }
 
-  public List<Long> getPrevious() {
+  public Set<Long> getPrevious() {
     return previous;
   }
 
@@ -93,7 +71,7 @@ public class DeckIteration {
     return getPrevious() != null && !getPrevious().isEmpty();
   }
 
-  public List<Long> getNext() {
+  public Set<Long> getNext() {
     return next;
   }
 }
