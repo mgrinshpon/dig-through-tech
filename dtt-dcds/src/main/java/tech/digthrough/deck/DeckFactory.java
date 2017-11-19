@@ -81,10 +81,10 @@ public class DeckFactory {
    */
   static BiConsumer<List<DeckIteration>, Long> sortDeckIterations() {
     return (toSort, headId) -> {
-      if(toSort.size() < 2) {
+      if (toSort.size() < 2) {
         return;
       }
-      int indexUnderExamination = IntStream.range(0, toSort.size())
+      final int indexUnderExamination = IntStream.range(0, toSort.size())
           .filter(index -> toSort.get(index).getKey().equals(headId)).findAny()
           .orElseThrow(() -> new IllegalArgumentException(
               "Unable to find headId=" + headId + " during sort"));
@@ -92,16 +92,18 @@ public class DeckFactory {
       toSort.remove(indexUnderExamination);
       toSort.add(swap);
       Long nextIdToFind = headId;
-      
+
       for (int i = toSort.size() - 2; i >= 0; --i) {
         final Long nextId = nextIdToFind;
         // Move up the unsorted list
         for (int j = i; j >= 0; --j) {
           final DeckIteration temp = toSort.get(j);
           if (!temp.getNext().stream().anyMatch(val -> val.equals(nextId))) {
-            // If this index doesn't contain the previous headId, ignore it unless the trees are unrelated
-            if(j == 0) {
-              throw new IllegalArgumentException("Unrelated iterations passed in. Unable to sort. Requested headId = {}, unrelatedIds={}, sortedIds={}");
+            // If this index doesn't contain the previous headId, ignore it unless the trees are
+            // unrelated
+            if (j == 0) {
+              throw new IllegalArgumentException(
+                  "Unrelated iterations passed in. Unable to sort. Requested headId = {}, unrelatedIds={}, sortedIds={}");
             }
             continue;
           }
@@ -121,7 +123,6 @@ public class DeckFactory {
     final Map<String, Integer> sideboard =
         iters.stream().map(iteration -> iteration.getSideboardChanges())
             .flatMap(kvps -> kvps.entrySet().stream()).collect(new DecklistCollector());
-
     return null;
   }
 
