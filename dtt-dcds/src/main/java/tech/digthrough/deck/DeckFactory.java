@@ -66,7 +66,7 @@ public class DeckFactory {
             .getDeckIterations(iter0.getPrevious().toArray(new Long[iter0.getPrevious().size()]))));
       }
       iterations.add(iter0);
-      sortDeckIters().accept(iterations, iter0.getKey());
+      sortDeckIterations().accept(iterations, iter0.getKey());
       for (int i = 1; i <= iterations.size(); ++i) {
         retval.add(deckFromIterations(iterations.subList(0, i)));
       }
@@ -79,29 +79,35 @@ public class DeckFactory {
   /**
    * Sort the deck iterations by descending chronological order in place using an insertion sort.
    */
-  static BiConsumer<List<DeckIteration>, Long> sortDeckIters() {
+  static BiConsumer<List<DeckIteration>, Long> sortDeckIterations() {
     return (toSort, headId) -> {
+      if(toSort.size() < 2) {
+        return;
+      }
       int indexUnderExamination = IntStream.range(0, toSort.size())
           .filter(index -> toSort.get(index).getKey().equals(headId)).findAny()
           .orElseThrow(() -> new IllegalArgumentException(
               "Unable to find headId=" + headId + " during sort"));
-      DeckIteration swap = toSort.get(indexUnderExamination);
-      Long nextIdToFind = headId;
+      final DeckIteration swap = toSort.get(indexUnderExamination);
       toSort.remove(indexUnderExamination);
-      toSort.add(toSort.size(), swap);
-      for (int i = toSort.size(); i > 0; --i) {
+      toSort.add(swap);
+      Long nextIdToFind = headId;
+      
+      for (int i = toSort.size() - 2; i >= 0; --i) {
         final Long nextId = nextIdToFind;
         // Move up the unsorted list
-        for (int j = i; j > 0; --j) {
-          if (!toSort.get(j - 1).getNext().stream().anyMatch(val -> val.equals(nextId))) {
-            // If this index doesn't contain the previous headId, ignore it
+        for (int j = i; j >= 0; --j) {
+          final DeckIteration temp = toSort.get(j);
+          if (!temp.getNext().stream().anyMatch(val -> val.equals(nextId))) {
+            // If this index doesn't contain the previous headId, ignore it unless the trees are unrelated
+            if(j == 0) {
+              throw new IllegalArgumentException("Unrelated iterations passed in. Unable to sort. Requested headId = {}, unrelatedIds={}, sortedIds={}");
+            }
             continue;
           }
-          indexUnderExamination = j - 1;
-          swap = toSort.get(indexUnderExamination);
-          nextIdToFind = swap.getKey();
-          toSort.remove(indexUnderExamination);
-          toSort.add(i - 1, swap);
+          nextIdToFind = temp.getKey();
+          toSort.remove(j);
+          toSort.add(i, temp);
         }
       }
     };
